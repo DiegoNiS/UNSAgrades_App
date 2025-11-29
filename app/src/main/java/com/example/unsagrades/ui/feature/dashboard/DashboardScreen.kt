@@ -138,18 +138,18 @@ fun DashboardContent(
                     CourseCard(course = course, onClick = { onCourseClick(course.id) })
                 }
 
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    // Footer: Terminar Semestre
-                    Button(
-                        onClick = { /* TODO: Lógica terminar */ },
-                        modifier = Modifier.fillMaxWidth().height(50.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = UnsaPurple.copy(alpha = 0.8f)),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text("Terminar Semestre", color = Color.White)
-                    }
-                }
+//                item {
+//                    Spacer(modifier = Modifier.height(16.dp))
+//                    // Footer: Terminar Semestre
+//                    Button(
+//                        onClick = { /* TODO: Lógica terminar */ },
+//                        modifier = Modifier.fillMaxWidth().height(50.dp),
+//                        colors = ButtonDefaults.buttonColors(containerColor = UnsaPurple.copy(alpha = 0.8f)),
+//                        shape = RoundedCornerShape(8.dp)
+//                    ) {
+//                        Text("Terminar Semestre", color = Color.White)
+//                    }
+//                }
             }
         }
     }

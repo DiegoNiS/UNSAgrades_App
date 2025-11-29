@@ -135,6 +135,7 @@ fun AddCourseContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .padding(horizontal = 20.dp)
                 .imePadding()
                 .verticalScroll(rememberScrollState()) // Scrollable por si hay muchos parciales
         ) {

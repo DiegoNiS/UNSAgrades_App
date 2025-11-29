@@ -149,6 +149,7 @@ fun CourseDetailContent(
                         onRemoveSusti = onRemoveSusti,
                         onUpdateSusti = onUpdateSusti,
                         onConfirmationChange = onConfirmationChange,
+                        onInclusionChange = onInclusionChange,
                         onGradeStep = onGradeStep
                     )
                 }
@@ -213,7 +214,7 @@ fun PartialItem(
                     isExam = false,
                     //weight = partial.config.continuousWeight,
                     grade = partial.continuousGrade,
-                    valueGrade = partial.continuousGrade,
+                    //valueGrade = partial.continuousGrade,
                     onStep = { onGradeStep(partial.continuousGrade, it) },
                     onConfirm = { onConfirmationChange(partial.continuousGrade, it) },
                     onInclude = { onInclusionChange(partial.continuousGrade, it) },
@@ -230,7 +231,7 @@ fun PartialItem(
                     isExam = true,
                     //weight = partial.config.examWeight,
                     grade = partial.examGrade,
-                    valueGrade = partial.examGrade,
+                    //valueGrade = partial.examGrade,
                     onStep = { onGradeStep(partial.examGrade, it) },
                     onConfirm = { onConfirmationChange(partial.examGrade, it) },
                     onInclude = { onInclusionChange(partial.examGrade, it) },
@@ -249,7 +250,7 @@ fun GradeRow(
     isExam: Boolean,
     //weight: Float, // Ej: 60.0
     grade: GradeEntity,
-    valueGrade: GradeEntity,
+    //valueGrade: GradeEntity,
     onStep: (Int) -> Unit,
     onConfirm: (Boolean) -> Unit,
     onInclude: (Boolean) -> Unit,
@@ -284,90 +285,115 @@ fun GradeRow(
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Controles (+, Input, -)
-        Column (
-            //verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-        ) {
-            if (!isLocked) {
-                // Botón Menos
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    IconButton(onClick = { onStep(-1) }, modifier = Modifier.size(32.dp)) {
-                        Text("-", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    }
+        inputGradeLayout(
+            isLocked = isLocked,
+            onStep = onStep,
+            grade = grade,
+            //valueGrade = valueGrade,
+            onGradeChange = onGradeChange,
+            onConfirm = onConfirm,
+            onInclude = onInclude,
+            isDark = false
+        )
 
-                    // 1. Preparamos el texto visual: Si es 0, mostramos vacío para que el placeholder actúe
-                    val displayValue = if (grade.value == 0) "" else grade.value.toString()
-                    OutlinedTextField(
-                        value = TextFieldValue(
-                            text = displayValue,
-                            selection = TextRange(displayValue.length)
-                        ),
-                        placeholder = { Text("0", color = Color.Gray) },
-                        onValueChange = { newTFV ->
-                            onGradeChange(valueGrade, newTFV.text)
-                        },
-                        modifier = Modifier
-                            .width(60.dp),
-                        //.height(40.dp),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.Black,
-                            unfocusedTextColor = Color.Black,
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White
-                        ),
-                    )
+        // aca ira el input inputGradeLayout
+    }
+}
 
-                    // Botón Más
-                    IconButton(onClick = { onStep(1) }, modifier = Modifier.size(32.dp)) {
-                        Text("+", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    }
-
-                    Spacer(modifier = Modifier.width(16.dp))
-
-                    // Checkbox (Incluir)
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Checkbox(
-                            checked = grade.isIncludedInAverage,
-                            onCheckedChange = onInclude
-                        )
-                        Text("Promediar", fontSize = 10.sp,)
-                    }
+@Composable
+fun inputGradeLayout(
+    isLocked: Boolean,
+    onStep: (Int) -> Unit,
+    grade: GradeEntity,
+    //valueGrade: GradeEntity,
+    onGradeChange: (GradeEntity, String) -> Unit,
+    onConfirm: (Boolean) -> Unit,
+    onInclude: (Boolean) -> Unit,
+    isDark: Boolean
+) {
+    // Controles (+, Input, -)
+    Column (
+        //verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+    ) {
+        if (!isLocked) {
+            // Botón Menos
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                IconButton(onClick = { onStep(-1) }, modifier = Modifier.size(32.dp)) {
+                    Text("-", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = if (isDark) Color.White else Color.Black)
                 }
-                //Spacer(modifier = Modifier.weight(1f))
-            } else {
-                // MODO SOLO LECTURA (Confirmado)
-                Text(
-                    text = grade.value.toString(),
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(start = 12.dp)
-                )
-                //Spacer(modifier = Modifier.weight(1f))
-            }
 
-            // Switch Confirmación
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Switch(
-                    checked = grade.isConfirmed,
-                    onCheckedChange = onConfirm,
-                    modifier = Modifier.scale(0.8f)
+                // 1. Preparamos el texto visual: Si es 0, mostramos vacío para que el placeholder actúe
+                val displayValue = if (grade.value == 0) "" else grade.value.toString()
+                OutlinedTextField(
+                    value = TextFieldValue(
+                        text = displayValue,
+                        selection = TextRange(displayValue.length)
+                    ),
+                    placeholder = { Text("0", color = Color.Gray) },
+                    onValueChange = { newTFV ->
+                        onGradeChange(grade, newTFV.text)
+                    },
+                    modifier = Modifier
+                        .width(60.dp),
+                    //.height(40.dp),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White
+                    ),
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = if (isLocked) "Nota Confirmada" else "Nota Borrador",
-                    fontSize = 10.sp,
-                    color = if (isLocked) Color.Black else Color.Gray
-                )
+
+                // Botón Más
+                IconButton(onClick = { onStep(1) }, modifier = Modifier.size(32.dp)) {
+                    Text("+", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = if (isDark) Color.White else Color.Black)
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                // Checkbox (Incluir)
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Checkbox(
+                        checked = grade.isIncludedInAverage,
+                        onCheckedChange = onInclude
+                    )
+                    Text("Promediar", fontSize = 10.sp, color = if (isDark) Color.White else Color.Black)
+                }
             }
+            //Spacer(modifier = Modifier.weight(1f))
+        } else {
+            // MODO SOLO LECTURA (Confirmado)
+            Text(
+                text = grade.value.toString(),
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 12.dp)
+            )
+            //Spacer(modifier = Modifier.weight(1f))
+        }
+
+        // Switch Confirmación
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Switch(
+                checked = grade.isConfirmed,
+                onCheckedChange = onConfirm,
+                modifier = Modifier.scale(0.8f)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = if (isLocked) "Nota Confirmada" else "Nota Borrador",
+                fontSize = 10.sp,
+                color = if (isDark) Color.LightGray else Color.Gray
+            )
         }
     }
 }
@@ -494,6 +520,7 @@ fun SustitutorioSection(
     onRemoveSusti: () -> Unit,
     onUpdateSusti: (GradeEntity, String) -> Unit,
     onConfirmationChange: (GradeEntity, Boolean) -> Unit,
+    onInclusionChange: (GradeEntity, Boolean) -> Unit,
     onGradeStep: (GradeEntity, Int) -> Unit
 ) {
     if (sustiGrade == null) {
@@ -521,41 +548,17 @@ fun SustitutorioSection(
 
                 // Reutilizamos GradeRow pero con colores custom si quisiéramos
                 // Por simplicidad, usamos una fila manual parecida
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
-                        .padding(8.dp)
-                ) {
-                    // Lógica similar a GradeRow pero adaptada al diseño Susti
-                    // Botón Menos
-                    IconButton(onClick = { onGradeStep(sustiGrade, -1) }) {
-                        Icon(Icons.Default.Delete, null, tint = Color.White)
-                    }
 
-                    Text(
-                        text = sustiGrade.value.toString(),
-                        color = Color.White,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 8.dp)
-                    )
-
-                    // Botón Más
-                    IconButton(onClick = { onGradeStep(sustiGrade, 1) }) {
-                        Icon(Icons.Default.Add, null, tint = Color.White)
-                    }
-
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    // Switch
-                    Switch(
-                        checked = sustiGrade.isConfirmed,
-                        onCheckedChange = { onConfirmationChange(sustiGrade, it) },
-                        colors = SwitchDefaults.colors(checkedThumbColor = Color.White)
-                    )
-                }
+                inputGradeLayout(
+                    isLocked = sustiGrade.isConfirmed,
+                    onStep = { onGradeStep(sustiGrade, it) },
+                    grade = sustiGrade,
+                    //valueGrade = valueGrade,
+                    onGradeChange = onUpdateSusti,
+                    onConfirm = { onConfirmationChange(sustiGrade, it) },
+                    onInclude = { onInclusionChange(sustiGrade, it) },
+                    isDark = true
+                )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
@@ -565,7 +568,7 @@ fun SustitutorioSection(
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Eliminar sustitutorio")
+                    Text("Eliminar sustitutorio", color = Color.White)
                 }
             }
         }

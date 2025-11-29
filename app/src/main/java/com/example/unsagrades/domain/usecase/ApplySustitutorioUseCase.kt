@@ -1,5 +1,6 @@
 package com.example.unsagrades.domain.usecase
 
+import android.util.Log
 import com.example.unsagrades.data.local.entity.GradeEntity
 import com.example.unsagrades.data.local.entity.GradeType
 import javax.inject.Inject
@@ -16,19 +17,21 @@ class ApplySustitutorioUseCase @Inject constructor() {
 
         // Buscamos la nota de examen más baja
         val lowestExam = examGrades.minByOrNull { it.value } ?: return
+        Log.d("UG", "susti grade: $sustiGrade")
 
         // Regla UNSA: El susti reemplaza a la nota más baja SOLO si es mayor que ella.
-        if (sustiGrade.value > lowestExam.value) {
-            val index = examGrades.indexOf(lowestExam)
-            if (index != -1) {
-                // Creamos una copia virtual de la nota reemplazada para el cálculo
-                // Mantenemos el mismo configId para que se promedie en el parcial correcto
-                examGrades[index] = lowestExam.copy(
-                    value = sustiGrade.value,
-                    isConfirmed = sustiGrade.isConfirmed, // Hereda estado del susti
-                    type = GradeType.EXAM // Se disfraza de examen
-                )
-            }
+        //if (sustiGrade.value > lowestExam.value) {
+        val index = examGrades.indexOf(lowestExam)
+        if (index != -1) {
+            Log.d("UG", "susti grade replaced")
+            // Creamos una copia virtual de la nota reemplazada para el cálculo
+            // Mantenemos el mismo configId para que se promedie en el parcial correcto
+            examGrades[index] = lowestExam.copy(
+                value = sustiGrade.value,
+                isConfirmed = sustiGrade.isConfirmed, // Hereda estado del susti
+                type = GradeType.EXAM // Se disfraza de examen
+            )
         }
+        //}
     }
 }

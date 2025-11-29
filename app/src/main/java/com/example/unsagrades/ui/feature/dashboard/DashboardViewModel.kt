@@ -79,17 +79,17 @@ class DashboardViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            // Observamos el semestre actual
-            repository.getCurrentSemester().collect { semester ->
+            // Observamos el semestre decidido arriba
+            targetSemesterFlow.collect { semester ->
                 if (semester != null) {
                     semesterName.value = semester.name
 
-                    // Una vez tenemos el ID del semestre, observamos sus cursos
+                    // Cargamos los cursos de ese semestre
                     repository.getCoursesForSemester(semester.id).collect { rawCourses ->
                         _courseCards.value = rawCourses.map { mapToUiModel(it) }
                     }
                 } else {
-                    semesterName.value = "Sin Semestre Actual"
+                    semesterName.value = "Semestre no encontrado"
                     _courseCards.value = emptyList()
                 }
             }

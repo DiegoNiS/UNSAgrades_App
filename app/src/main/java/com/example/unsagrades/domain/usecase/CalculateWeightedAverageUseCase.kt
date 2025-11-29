@@ -1,5 +1,6 @@
 package com.example.unsagrades.domain.usecase
 
+import android.util.Log
 import com.example.unsagrades.data.local.entity.EvaluationConfigEntity
 import com.example.unsagrades.data.local.entity.GradeEntity
 import com.example.unsagrades.data.local.entity.GradeType
@@ -25,6 +26,11 @@ class CalculateWeightedAverageUseCase @Inject constructor(
         grades: List<GradeEntity>
     ): Double {
         if (configs.isEmpty()) return 0.0
+        Log.d("UG", "cambio de notas registrado")
+
+        // Mapa auxiliar para saber el número de parcial de cada nota rápidamente
+        // Key: configId, Value: partialNumber (1, 2, 3...)
+        val configMap = configs.associate { it.id to it.partialNumber }
 
         // 1. Separar notas regulares y nota de susti
         val regularGrades = grades.filter { it.type != GradeType.SUSTI }
@@ -33,21 +39,36 @@ class CalculateWeightedAverageUseCase @Inject constructor(
         // 2. Identificar notas de tipo EXAMEN para ver si aplica el susti
         val allExamGrades = regularGrades.filter { it.type == GradeType.EXAM }.toMutableList()
 
-        // 3. Aplicar lógica de sustitutorio (modifica allExamGrades in-situ reemplazando la menor)
-        if (sustiGrade != null) {
-            applySustitutorioUseCase(allExamGrades, sustiGrade)
+        // --- CORRECCIÓN AQUÍ ---
+        // Filtramos solo los exámenes elegibles para sustitución (Parcial 1 y 2)
+        val eligibleForSusti = allExamGrades.filter {
+            val pNum = configMap[it.configId] ?: 99
+            pNum == 1 || pNum == 2
+        }.toMutableList()
+
+        // Los demás (Parcial 3, etc.) los guardamos aparte, son intocables
+        val protectedExams = allExamGrades.filter {
+            val pNum =  configMap[it.configId] ?: 99
+            pNum != 1 && pNum != 2
         }
 
-        // 4. Reconstruir lista de notas para procesar
+        // 3. Aplicar lógica de sustitutorio SOLO a los elegibles
+        // (Modifica la lista eligibleForSusti in-situ si aplica el reemplazo)
+        if (sustiGrade != null) {
+            applySustitutorioUseCase(eligibleForSusti, sustiGrade)
+        }
+
+        // 4. Reconstruir la lista completa de notas para procesar
+        // Juntamos: Exámenes (posiblemente modificados) + Exámenes intocables + Continuas
         val continuousGrades = regularGrades.filter { it.type == GradeType.CONTINUOUS }
-        // Unimos las continuas originales con los exámenes (que pueden haber sido reemplazados por el susti)
-        val finalGradesToProcess = allExamGrades + continuousGrades
+
+        val finalGradesToProcess = eligibleForSusti + protectedExams + continuousGrades
 
         // Agrupamos por configId para saber a qué parcial pertenece cada nota
         val gradesByConfig = finalGradesToProcess.groupBy { it.configId }
 
         var totalPoints = 0.0      // Puntos acumulados (ej. 4.5 puntos)
-        var processedWeight = 0.0  // Peso acumulado procesado (ej. 0.30 o 30%)
+        //var processedWeight = 0.0  // Peso acumulado procesado (ej. 0.30 o 30%)
 
         for (config in configs) {
             val partialGrades = gradesByConfig[config.id] ?: emptyList()
@@ -60,26 +81,27 @@ class CalculateWeightedAverageUseCase @Inject constructor(
             val rawWExam = config.examWeight
             val rawWCont = config.continuousWeight
 
-            val wExam = if (rawWExam > 1.0) rawWExam / 100.0 else rawWExam.toDouble()
-            val wCont = if (rawWCont > 1.0) rawWCont / 100.0 else rawWCont.toDouble()
+            val wExam = rawWExam / 100.0
+            val wCont = rawWCont / 100.0
 
             // LÓGICA DE SUMA DIRECTA (Pesos Globales):
 
             // --- EXAMEN ---
             if (exam != null && exam.isIncludedInAverage) {
                 totalPoints += (exam.value * wExam)
-                processedWeight += wExam
+                Log.d("UG", "El valor del examen es: ${exam.value}")
+                //processedWeight += wExam
             }
 
             // --- CONTINUA ---
             if (continuous != null && continuous.isIncludedInAverage) {
                 totalPoints += (continuous.value * wCont)
-                processedWeight += wCont
+                //processedWeight += wCont
             }
         }
 
         // Si no hemos procesado nada aún, el promedio es 0
-        if (processedWeight == 0.0) return 0.0
+        //if (processedWeight == 0.0) return 0.0
 
         // CÁLCULO FINAL:
         // Divide los puntos ganados entre el peso que ya se "jugó".
