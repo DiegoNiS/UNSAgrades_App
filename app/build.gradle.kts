@@ -18,8 +18,8 @@ android {
         applicationId = "com.example.unsagrades"
         minSdk = 24
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.3"
+        versionCode = 4
+        versionName = "2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -86,6 +86,11 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)   // <--- AÑADE ESTA LÍNEA. ¡Ahora Hilt usa KSP!
     //ksp(libs.javapoet)
+    implementation("androidx.compose.ui:ui-text-google-fonts:1.7.6")
+    implementation("androidx.compose.material:material-icons-extended:1.7.6")
+    
+    // Vico Charts
+    implementation("com.patrykandpatrick.vico:compose-m3:2.0.0-alpha.27")
 }
 //
 //// Configuración para corregir errores de tipos en Kapt

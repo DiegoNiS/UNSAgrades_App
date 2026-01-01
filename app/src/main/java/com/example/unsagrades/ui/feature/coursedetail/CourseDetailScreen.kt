@@ -1,10 +1,14 @@
 package com.example.unsagrades.ui.feature.coursedetail
 
+import android.annotation.SuppressLint
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -15,6 +19,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -38,24 +43,32 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.unsagrades.data.local.entity.EvaluationConfigEntity
 import com.example.unsagrades.data.local.entity.GradeEntity
 import com.example.unsagrades.data.local.entity.GradeType
-import com.example.unsagrades.ui.theme.UnsaPurple
+
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
-import com.example.unsagrades.ui.theme.TextGray
+import com.example.unsagrades.ui.common.ColumnAnimated
+import com.example.unsagrades.ui.common.ConfigurarBarraEstado
+import com.example.unsagrades.ui.common.CourseStatus
+import com.example.unsagrades.ui.common.ModalDeIngreso
+import com.example.unsagrades.ui.common.RuedaInfinitaHorizontal
+import com.example.unsagrades.ui.feature.dashboard.StatusIcon
+import com.example.unsagrades.ui.feature.dashboard.TagIcon
+import com.example.unsagrades.ui.theme.StateFailingBg
+import com.example.unsagrades.ui.theme.StatePassingBg
+import com.example.unsagrades.ui.theme.UNSAGradesTheme
+import kotlin.math.abs
 
-// Colores específicos de tu diseño
-val AccordionHeader = Color(0xFFB0BCCF) // Gris azulado header
-val AccordionBody = Color(0xFF9FA8DA).copy(alpha = 0.3f) // Azul claro cuerpo
 val SustiBlue = Color(0xFF5C6BC0) // Azul fuerte susti
 
 @Composable
 fun CourseDetailScreen(
     onNavigateBack: () -> Unit,
-    viewModel: CourseDetailViewModel = hiltViewModel()
+    viewModel: CourseDetailViewModel = hiltViewModel(),
+    innerPadding: PaddingValues
 ) {
     val state by viewModel.uiState.collectAsState()
 
@@ -68,7 +81,9 @@ fun CourseDetailScreen(
         onAddSusti = viewModel::addSustitutorio,
         onRemoveSusti = viewModel::removeSustitutorio,
         onUpdateSusti = viewModel::onUpdateSusti,
-        onWeightChange = viewModel::onWeightChange
+        onWeightChange = viewModel::onWeightChange,
+        onNavigateBack = onNavigateBack,
+        innerPadding = innerPadding
     )
 }
 
@@ -82,77 +97,174 @@ fun CourseDetailContent(
     onAddSusti: () -> Unit,
     onRemoveSusti: () -> Unit,
     onUpdateSusti: (GradeEntity, String) -> Unit,
-    onWeightChange: (EvaluationConfigEntity, String, Boolean) -> Unit
+    onWeightChange: (EvaluationConfigEntity, String, Boolean) -> Unit,
+    test: Boolean = false,
+    onNavigateBack: () -> Unit = {},
+    innerPadding: PaddingValues
 ) {
-    Scaffold(containerColor = Color.White) { padding ->
+    ConfigurarBarraEstado(
+        color = MaterialTheme.colorScheme.tertiary,
+        iconosOscuros = false
+    )
+    Scaffold(
+        modifier = Modifier.fillMaxSize(), // Ocupa TODA la pantalla
+        containerColor = MaterialTheme.colorScheme.tertiary // Tu color azul/verde
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .imePadding() // <--- ¡AQUÍ ESTÁ LA SOLUCIÓN! Empuja el contenido hacia arriba con el teclado.
-                .padding(horizontal = 20.dp)
+                //.padding(innerPadding)
+                //.padding(top = 24.dp)
+                //.padding(bottom = innerPadding.calculateBottomPadding())
+                .background(color = MaterialTheme.colorScheme.surfaceDim)
         ) {
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // HEADER
-            Text(
-                text = state.courseName,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                lineHeight = 32.sp,
-                color = Color.Black
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Card(
+                shape = RoundedCornerShape(
+                    bottomStart = 16.dp,
+                    bottomEnd = 16.dp
+                ),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiary),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    //.statusBarsPadding()
             ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding() // <--- EL PADDING VA AQUÍ ADENTRO
+                ) {
+                    Box(//hacer que los elementos estén centrados verticalmente, mas no horizontalmente
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        IconButton(
+                            onClick = onNavigateBack,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBackIosNew,
+                                contentDescription = "Volver atras",
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Text(
+                            text = "Detalles del curso",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Estado: ${state.status}",
-                    fontSize = 16.sp,
-                    color = Color.Gray
+                    text = state.courseName.uppercase(),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
-                Text(
-                    text = String.format("%.1f", state.average),
-                    fontSize = 36.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
+                Spacer(modifier = Modifier.height(24.dp))
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // LISTA DE PARCIALES
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(bottom = 100.dp),
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .imePadding() // <--- ¡AQUÍ ESTÁ LA SOLUCIÓN! Empuja el contenido hacia arriba con el teclado.
+                    .padding(horizontal = 16.dp)
+                    .background(MaterialTheme.colorScheme.surfaceDim),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(state.partials) { partial ->
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Column {
+                        StatusIcon(
+                                status = state.status,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Row {
+                            Text(
+                                text = "Pesos sumados: ",
+                                color = MaterialTheme.colorScheme.outline,
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                            TagIcon(
+                                msg = "${state.totalWeight} %",
+                                color = if (state.totalWeight == 100) StatePassingBg else StateFailingBg,
+                                width = 56.dp
+                            )
+                        }
+                    }
+
+
+                    Column(
+                        horizontalAlignment = Alignment.End,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "Suma:",
+                            color = MaterialTheme.colorScheme.outline,
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                        Text(
+                            text = String.format("%.1f", state.average),
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                }
+
+                if (abs(state.progress - 100) <= 0.1) {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
+                            shape = RoundedCornerShape(
+                                topStart = 24.dp,
+                                topEnd = 40.dp,
+                                bottomStart = 40.dp,
+                                bottomEnd = 24.dp
+                            ),
+                            modifier = Modifier.padding(8.dp)
+                        ) {
+                            Text(
+                                text = "CURSO COMPLETADO",
+                                fontWeight = FontWeight.SemiBold,
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
+                    }
+                }
+
+                state.partials.forEach { it ->
                     PartialItem(
-                        partial = partial,
+                        partial = it,
                         onGradeChange = onGradeChange,
                         onGradeStep = onGradeStep,
                         onConfirmationChange = onConfirmationChange,
                         onInclusionChange = onInclusionChange,
-                        onWeightChange = onWeightChange
+                        onWeightChange = onWeightChange,
+                        expandedTest = test
                     )
                 }
+                SustitutorioSection(
+                    sustiGrade = state.sustitutorio,
+                    onAddSusti = onAddSusti,
+                    onRemoveSusti = onRemoveSusti,
+                    onUpdateSusti = onUpdateSusti,
+                    onConfirmationChange = onConfirmationChange,
+                    onInclusionChange = onInclusionChange,
+                    onGradeStep = onGradeStep
+                )
 
-                // SECCIÓN SUSTITUTORIO
-                item {
-                    SustitutorioSection(
-                        sustiGrade = state.sustitutorio,
-                        onAddSusti = onAddSusti,
-                        onRemoveSusti = onRemoveSusti,
-                        onUpdateSusti = onUpdateSusti,
-                        onConfirmationChange = onConfirmationChange,
-                        onInclusionChange = onInclusionChange,
-                        onGradeStep = onGradeStep
-                    )
-                }
+                Spacer(modifier = Modifier.height(80.dp))
             }
         }
     }
@@ -165,81 +277,45 @@ fun PartialItem(
     onGradeStep: (GradeEntity, Int) -> Unit,
     onConfirmationChange: (GradeEntity, Boolean) -> Unit,
     onInclusionChange: (GradeEntity, Boolean) -> Unit,
-    onWeightChange: (EvaluationConfigEntity, String, Boolean) -> Unit
+    onWeightChange: (EvaluationConfigEntity, String, Boolean) -> Unit,
+    expandedTest : Boolean = false
 ) {
-    var expanded by remember { mutableStateOf(false) } // Estado local del acordeón
-    val rotationState by animateFloatAsState(if (expanded) 180f else 0f)
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(AccordionHeader.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+    ColumnAnimated(
+        label = "Parcial ${partial.config.partialNumber}",
+        expandedTest = expandedTest
     ) {
-        // HEADER DEL PARCIAL (Siempre visible)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = !expanded }
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Parcial ${partial.config.partialNumber}",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.Black
-            )
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowDown,
-                contentDescription = "Expandir",
-                modifier = Modifier.rotate(rotationState),
-                tint = Color.Black
-            )
-        }
+        // FILA CONTINUA
+        GradeRow(
+            label = "Ev. Continua",
+            partialconfig = partial.config,
+            isExam = false,
+            //weight = partial.config.continuousWeight,
+            grade = partial.continuousGrade,
+            //valueGrade = partial.continuousGrade,
+            onStep = { onGradeStep(partial.continuousGrade, it) },
+            onConfirm = { onConfirmationChange(partial.continuousGrade, it) },
+            onInclude = { onInclusionChange(partial.continuousGrade, it) },
+            onWeightChange = onWeightChange,
+            onGradeChange = onGradeChange
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        HorizontalDivider()
+        Spacer(modifier = Modifier.height(8.dp))
 
-        // CUERPO EXPANDIBLE
-        AnimatedVisibility(visible = expanded) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 8.dp)
-                    .background(AccordionBody, RoundedCornerShape(8.dp))
-                    .padding(12.dp)
-            ) {
-                // FILA CONTINUA
-                GradeRow(
-                    label = "Ev. Continua",
-                    partialconfig = partial.config,
-                    isExam = false,
-                    //weight = partial.config.continuousWeight,
-                    grade = partial.continuousGrade,
-                    //valueGrade = partial.continuousGrade,
-                    onStep = { onGradeStep(partial.continuousGrade, it) },
-                    onConfirm = { onConfirmationChange(partial.continuousGrade, it) },
-                    onInclude = { onInclusionChange(partial.continuousGrade, it) },
-                    onWeightChange = onWeightChange,
-                    onGradeChange = onGradeChange
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // FILA EXAMEN
-                GradeRow(
-                    label = "Ev. Examen",
-                    partialconfig = partial.config,
-                    isExam = true,
-                    //weight = partial.config.examWeight,
-                    grade = partial.examGrade,
-                    //valueGrade = partial.examGrade,
-                    onStep = { onGradeStep(partial.examGrade, it) },
-                    onConfirm = { onConfirmationChange(partial.examGrade, it) },
-                    onInclude = { onInclusionChange(partial.examGrade, it) },
-                    onWeightChange = onWeightChange,
-                    onGradeChange = onGradeChange
-                )
-            }
-        }
+        // FILA EXAMEN
+        GradeRow(
+            label = "Ev. Examen",
+            partialconfig = partial.config,
+            isExam = true,
+            //weight = partial.config.examWeight,
+            grade = partial.examGrade,
+            //valueGrade = partial.examGrade,
+            onStep = { onGradeStep(partial.examGrade, it) },
+            onConfirm = { onConfirmationChange(partial.examGrade, it) },
+            onInclude = { onInclusionChange(partial.examGrade, it) },
+            onWeightChange = onWeightChange,
+            onGradeChange = onGradeChange
+        )
     }
 }
 
@@ -263,23 +339,27 @@ fun GradeRow(
     Column {
         // Título de fila: "Ev. Continua - 40%"
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(text = label, fontSize = 14.sp, color = Color.Black)
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.outline
+            )
             // Icono de lápiz (decorativo por ahora) y peso
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 InlineEditableWeight(
-                    value = weight.toInt().toString(),
+                    value = weight.toInt(),
                     partialconfig = partialconfig,
                     isExam = isExam,
                     onWeightChange = onWeightChange
                 )
-//                Text(text = , fontWeight = FontWeight.Bold)
-//                Spacer(modifier = Modifier.width(8.dp))
-//                Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
             }
         }
 
@@ -298,6 +378,7 @@ fun GradeRow(
 
         // aca ira el input inputGradeLayout
     }
+    Spacer(modifier = Modifier.height(8.dp))
 }
 
 @Composable
@@ -312,87 +393,86 @@ fun inputGradeLayout(
     isDark: Boolean
 ) {
     // Controles (+, Input, -)
-    Column (
-        //verticalAlignment = Alignment.CenterVertically,
+    Row (
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+            //.padding(horizontal = 16.dp)
     ) {
-        if (!isLocked) {
-            // Botón Menos
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                IconButton(onClick = { onStep(-1) }, modifier = Modifier.size(32.dp)) {
-                    Text("-", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = if (isDark) Color.White else Color.Black)
-                }
-
-                // 1. Preparamos el texto visual: Si es 0, mostramos vacío para que el placeholder actúe
-                val displayValue = if (grade.value == 0) "" else grade.value.toString()
-                OutlinedTextField(
-                    value = TextFieldValue(
-                        text = displayValue,
-                        selection = TextRange(displayValue.length)
-                    ),
-                    placeholder = { Text("0", color = Color.Gray) },
-                    onValueChange = { newTFV ->
-                        onGradeChange(grade, newTFV.text)
-                    },
-                    modifier = Modifier
-                        .width(60.dp),
-                    //.height(40.dp),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Black,
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White
-                    ),
-                )
-
-                // Botón Más
-                IconButton(onClick = { onStep(1) }, modifier = Modifier.size(32.dp)) {
-                    Text("+", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = if (isDark) Color.White else Color.Black)
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                // Checkbox (Incluir)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Start,
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+        ) {
+            if (!isLocked) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Checkbox(
                         checked = grade.isIncludedInAverage,
-                        onCheckedChange = onInclude
+                        onCheckedChange = onInclude,
+                        modifier = Modifier.size(32.dp)
                     )
-                    Text("Promediar", fontSize = 10.sp, color = if (isDark) Color.White else Color.Black)
+                    Text(
+                        "Contar",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
                 }
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 16.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.surfaceContainerLowest.copy(
+                                alpha = 0.7f
+                            ), shape = RoundedCornerShape(8.dp)
+                        )
+                ) {
+                    RuedaInfinitaHorizontal(
+                        items = (0..20).map { it.toString() },
+                        initialIndex = 0,
+                        visibleItemsCount = 5,
+                        onSelectionChanged = {
+                            onGradeChange(grade, it.toString())
+                        },
+                        tipographySelected = MaterialTheme.typography.titleMedium,
+                        tipographyUnselected = MaterialTheme.typography.titleSmall,
+                        colorSelected = MaterialTheme.colorScheme.onSurface,
+                        colorUnselected = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        height = 40.dp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
             }
-            //Spacer(modifier = Modifier.weight(1f))
-        } else {
-            // MODO SOLO LECTURA (Confirmado)
-            Text(
-                text = grade.value.toString(),
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 12.dp)
-            )
-            //Spacer(modifier = Modifier.weight(1f))
+            else {
+                Text(
+                    text = grade.value.toString(),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
         }
 
+
         // Switch Confirmación
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             Switch(
                 checked = grade.isConfirmed,
                 onCheckedChange = onConfirm,
-                modifier = Modifier.scale(0.8f)
+                modifier = Modifier
+                    .scale(0.8f)
+                    .size(32.dp)
             )
-            Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = if (isLocked) "Nota Confirmada" else "Nota Borrador",
-                fontSize = 10.sp,
-                color = if (isDark) Color.LightGray else Color.Gray
+                text = "Afirmar",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline
             )
         }
     }
@@ -400,116 +480,44 @@ fun inputGradeLayout(
 
 @Composable
 fun InlineEditableWeight(
-    value: String,
+    value: Int,
     partialconfig: EvaluationConfigEntity,
     isExam: Boolean,
     onWeightChange: (EvaluationConfigEntity, String, Boolean) -> Unit
 ) {
-    var isEditing by remember { mutableStateOf(false) }
-
-    // 1. EL SEGURO: Esta variable recordará si el campo YA ganó el foco alguna vez.
-    var hasGainedFocus by remember { mutableStateOf(false) }
-
-    val focusRequester = remember { FocusRequester() }
-    val focusManager = LocalFocusManager.current
-
-    val textStyle = TextStyle(
-        fontWeight = FontWeight.Bold,
-        fontSize = 14.sp,
-        color = MaterialTheme.colorScheme.onSurface,
-        textAlign = TextAlign.End
-    )
+    var showModal by remember { mutableStateOf(false) }
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(4.dp)
+        modifier = Modifier.clickable { showModal = true }
     ) {
-
-        if (isEditing) {
-            // 1. PREPARAR EL TEXTO INICIAL (Lógica del "0")
-            // Si es "0", lo volvemos vacío para que sea fácil escribir algo nuevo
-            val initialText = if (value == "0") "" else value
-
-            // 2. ESTADO LOCAL AVANZADO
-            // Usamos TextFieldValue en lugar de String.
-            // 'selection = TextRange(initialText.length)' pone el cursor AL FINAL.
-            var textFieldValue by remember {
-                mutableStateOf(
-                    TextFieldValue(
-                        text = initialText,
-                        selection = TextRange(initialText.length)
-                    )
-                )
-            }
-
-            BasicTextField(
-                // 3. Pasamos el OBJETO COMPLETO (texto + cursor)
-                value = textFieldValue,
-
-                onValueChange = { newTFV ->
-                    // Actualizamos el estado local (para que el cursor se mueva al escribir)
-                    textFieldValue = newTFV
-
-                    // Enviamos SOLO EL TEXTO a tu lógica de negocio
-                    onWeightChange(partialconfig, newTFV.text, isExam)
-                },
-
-                textStyle = textStyle.copy(color = UnsaPurple),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number,
-                    imeAction = ImeAction.Done
-                ),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        isEditing = false
-                        hasGainedFocus = false
-                        focusManager.clearFocus()
-                    }
-                ),
-                singleLine = true,
-                modifier = Modifier
-                    .width(40.dp)
-                    .focusRequester(focusRequester)
-                    .onFocusChanged { focusState ->
-                        // Tu lógica del SEGURO (intacta, funciona perfecto)
-                        if (focusState.isFocused) {
-                            hasGainedFocus = true
-                        }
-                        if (!focusState.isFocused && hasGainedFocus) {
-                            isEditing = false
-                            hasGainedFocus = false
-                        }
-                    }
-            )
-
-            LaunchedEffect(Unit) {
-                focusRequester.requestFocus()
-            }
-
-        } else {
-            Text(
-                text = "$value%",
-                style = textStyle
-            )
-        }
-
+        Text(
+            text = "$value %",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold
+        )
         Spacer(modifier = Modifier.width(4.dp))
+        Icon(
+            imageVector = Icons.Default.Edit,
+            contentDescription = "Editar",
+            tint = MaterialTheme.colorScheme.onSurface, // Feedback visual
+            modifier = Modifier.size(16.dp)
+        )
+    }
 
-        // Botón de editar
-        IconButton(
-            onClick = {
-                isEditing = !isEditing
-                // Nota: No tocamos hasGainedFocus aquí, dejamos que el TextField lo maneje
+    if (showModal) {
+        ModalDeIngreso(
+            onDismiss = { showModal = false },
+            onConfirm = {
+                onWeightChange(partialconfig, it, isExam)
+                showModal = false
             },
-            modifier = Modifier.size(16.dp) // Un poquito más grande para el dedo (12dp es muy poco)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Edit,
-                contentDescription = "Editar",
-                tint = if (isEditing) UnsaPurple else Color.Gray, // Feedback visual
-                modifier = Modifier.size(12.dp)
-            )
-        }
+            message = "Ingresa el nuevo peso de ${if (isExam) "el examen" else "la continua"}",
+            title = "Cambiar Peso en parcial ${partialconfig.partialNumber}",
+            actualValue = value,
+            label = "Nuevo Peso"
+        )
     }
 }
 
@@ -530,25 +538,22 @@ fun SustitutorioSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = SustiBlue),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
             shape = RoundedCornerShape(8.dp)
         ) {
-            Text("+ Agregar Sustitutorio", color = Color.White)
+            Text("+ Agregar Sustitutorio", color = MaterialTheme.colorScheme.onSecondary)
         }
     } else {
         // ESTADO 2: Panel de Sustitutorio (Azul oscuro)
         Card(
-            colors = CardDefaults.cardColors(containerColor = SustiBlue),
-            shape = RoundedCornerShape(12.dp)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text("Sustitutorio", color = Color.White, fontWeight = FontWeight.Bold)
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Reutilizamos GradeRow pero con colores custom si quisiéramos
-                // Por simplicidad, usamos una fila manual parecida
-
+            ColumnAnimated(
+                label = "Sustitutorio",
+                expandedTest = true
+            ) {
                 inputGradeLayout(
                     isLocked = sustiGrade.isConfirmed,
                     onStep = { onGradeStep(sustiGrade, it) },
@@ -560,16 +565,17 @@ fun SustitutorioSection(
                     isDark = true
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // Botón Rojo Eliminar
                 Button(
                     onClick = onRemoveSusti,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Eliminar sustitutorio", color = Color.White)
+                    Text("Eliminar sustitutorio", color = MaterialTheme.colorScheme.onSecondary)
                 }
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
@@ -591,6 +597,11 @@ fun CourseDetailPreview() {
         id = "c2", courseId = "mock", partialNumber = 2, examWeight = 50f, continuousWeight = 50f
     )
 
+    val config3 = EvaluationConfigEntity(
+        id = "c3", courseId = "mock", partialNumber = 3, examWeight = 40f, continuousWeight = 60f
+    )
+
+
     // Parcial 1: Notas confirmadas (Modo lectura)
     val p1Cont = GradeEntity(id = "g1", configId = "c1", type = GradeType.CONTINUOUS, value = 14, isConfirmed = true, isIncludedInAverage = true)
     val p1Exam = GradeEntity(id = "g2", configId = "c1", type = GradeType.EXAM, value = 12, isConfirmed = true, isIncludedInAverage = true)
@@ -599,26 +610,38 @@ fun CourseDetailPreview() {
     val p2Cont = GradeEntity(id = "g3", configId = "c2", type = GradeType.CONTINUOUS, value = 16, isConfirmed = false, isIncludedInAverage = true)
     val p2Exam = GradeEntity(id = "g4", configId = "c2", type = GradeType.EXAM, value = 0, isConfirmed = false, isIncludedInAverage = true)
 
+    val p3Cont = GradeEntity(id = "g5", configId = "c3", type = GradeType.CONTINUOUS, value = 16, isConfirmed = false, isIncludedInAverage = true)
+    val p3Exam = GradeEntity(id = "g6", configId = "c3", type = GradeType.EXAM, value = 0, isConfirmed = false, isIncludedInAverage = true)
+
     val mockState = CourseDetailUiState(
         courseName = "Inteligencia Artificial",
         average = 13.0,
-        status = "Aprobado",
+        status = CourseStatus.PASSING,
         partials = listOf(
-            PartialUiModel(config1, p1Cont, p1Exam),
-            PartialUiModel(config2, p2Cont, p2Exam)
+            //PartialUiModel(config1, p1Cont, p1Exam),
+            PartialUiModel(config2, p2Cont, p2Exam),
+            //PartialUiModel(config3, p3Cont, p3Exam)
         ),
         sustitutorio = null
     )
 
-    CourseDetailContent(
-        state = mockState,
-        onGradeChange = { _, _ -> },
-        onGradeStep = { _, _ -> },
-        onConfirmationChange = { _, _ -> },
-        onInclusionChange = { _, _ -> },
-        onAddSusti = {},
-        onRemoveSusti = {},
-        onUpdateSusti = { _, _ -> },
-        onWeightChange = { _, _, _ -> },
-    )
+    UNSAGradesTheme(dynamicColor = false) {
+        Scaffold() { innerPadding ->
+            Box() {
+                CourseDetailContent(
+                    state = mockState,
+                    onGradeChange = { _, _ -> },
+                    onGradeStep = { _, _ -> },
+                    onConfirmationChange = { _, _ -> },
+                    onInclusionChange = { _, _ -> },
+                    onAddSusti = {},
+                    onRemoveSusti = {},
+                    onUpdateSusti = { _, _ -> },
+                    onWeightChange = { _, _, _ -> },
+                    test = false,
+                    innerPadding = innerPadding
+                )
+            }
+        }
+    }
 }

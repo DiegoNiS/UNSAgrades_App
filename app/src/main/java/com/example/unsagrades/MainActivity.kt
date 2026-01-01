@@ -18,12 +18,10 @@ import androidx.navigation.compose.rememberNavController
 import com.example.unsagrades.ui.navigation.UnsaNavGraph
 import com.example.unsagrades.ui.theme.UNSAGradesTheme
 import dagger.hilt.android.AndroidEntryPoint
+import com.example.unsagrades.ui.MainScreen
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
-    private val viewModel: MainViewModel by viewModels()
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -33,22 +31,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    val state by viewModel.mainState.collectAsState()
-
-                    when (val currentState = state) {
-                        is MainState.Loading -> {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator()
-                            }
-                        }
-                        is MainState.Success -> {
-                            val navController = rememberNavController()
-                            UnsaNavGraph(
-                                navController = navController,
-                                startDestination = currentState.startRoute
-                            )
-                        }
-                    }
+                    MainScreen()
                 }
             }
         }

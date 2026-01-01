@@ -1,7 +1,9 @@
 package com.example.unsagrades.ui.feature.semester
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,8 +12,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -24,18 +29,24 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.unsagrades.ui.theme.UnsaPurple
+import com.example.unsagrades.ui.theme.UNSAGradesTheme
+
+//import com.example.unsagrades.ui.theme.UnsaPurple
 
 @Composable
 fun NewSemesterScreen(
     onNavigateToDashboard: () -> Unit,
-    viewModel: NewSemesterViewModel = hiltViewModel()
+    viewModel: NewSemesterViewModel = hiltViewModel(),
+    innerPadding : PaddingValues
 ) {
     val name by viewModel.semesterName.collectAsState()
     val isCurrent by viewModel.isCurrent.collectAsState()
@@ -52,7 +63,8 @@ fun NewSemesterScreen(
         isCurrent = isCurrent,
         onNameChange = viewModel::onNameChange,
         onIsCurrentChange = viewModel::onIsCurrentChange,
-        onSaveClick = viewModel::saveSemester
+        onSaveClick = viewModel::saveSemester,
+        innerPadding = innerPadding
     )
 }
 
@@ -62,26 +74,27 @@ fun NewSemesterContent(
     isCurrent: Boolean,
     onNameChange: (String) -> Unit,
     onIsCurrentChange: (Boolean) -> Unit,
-    onSaveClick: () -> Unit
+    onSaveClick: () -> Unit,
+    innerPadding : PaddingValues
 ) {
     Scaffold(
-        containerColor = Color.White // Fondo blanco limpio
-    ) { paddingValues ->
+        containerColor = MaterialTheme.colorScheme.surfaceDim,
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(innerPadding)
                 .padding(24.dp)
                 .imePadding() // <--- ¡ESTE ES EL TRUCO!
         ) {
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Título
             Text(
-                text = "Nuevo Semestre",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
+                text = "Crea un nuevo semestre",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -89,9 +102,9 @@ fun NewSemesterContent(
             // Label
             Text(
                 text = "Nombre del semestre:",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -100,22 +113,29 @@ fun NewSemesterContent(
             OutlinedTextField(
                 value = name,
                 onValueChange = onNameChange,
-                placeholder = { Text("Primer Semestre", color = Color.Gray) },
+                placeholder = { Text("Primer Semestre", color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.5f)) },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.Black,
-                    unfocusedTextColor = Color.Black,
-                    focusedContainerColor = Color(0xFFE0E0E0), // Gris suave
-                    unfocusedContainerColor = Color(0xFFE0E0E0),
-                    focusedBorderColor = UnsaPurple,
-                    unfocusedBorderColor = Color.Transparent,
-                    cursorColor = UnsaPurple
+                    focusedTextColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                    focusedBorderColor = MaterialTheme.colorScheme.onTertiary,
+                    unfocusedBorderColor = Color.Transparent
                 ),
+                // al dar enter desplazar al siguiente input
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
+//
+//                // B. Le decimos: "Al dar Siguiente, mueve el foco hacia abajo"
+//                keyboardActions = KeyboardActions(
+//                    onDone = { // remover el teclado
+//                    }
+//                ),
                 singleLine = true
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Switch Row
             Row(
@@ -125,19 +145,19 @@ fun NewSemesterContent(
             ) {
                 Text(
                     text = "Semestre actual:",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Switch(
                     checked = isCurrent,
                     onCheckedChange = onIsCurrentChange,
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.White,
-                        checkedTrackColor = Color.Black, // Como en tu diseño (Negro/Blanco)
-                        uncheckedThumbColor = Color.Gray,
-                        uncheckedTrackColor = Color.LightGray
+                        checkedThumbColor = MaterialTheme.colorScheme.primaryContainer,
+                        checkedTrackColor = MaterialTheme.colorScheme.primary, // Como   en tu diseño (Negro/Blanco)
+                        uncheckedThumbColor = MaterialTheme.colorScheme.tertiary,
+                        uncheckedTrackColor = MaterialTheme.colorScheme.tertiaryContainer // Como en tu diseño (Negro/Blanco)
                     )
                 )
             }
@@ -148,21 +168,15 @@ fun NewSemesterContent(
             Button(
                 onClick = onSaveClick,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                    .fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = UnsaPurple // Morado UNSA
+                    containerColor = MaterialTheme.colorScheme.secondary // Morado UNSA
                 ),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Text(
-                    text = "Guardar Semestre",
-                    fontSize = 16.sp,
-                    color = Color.White
-                )
-            }
+                Text(text = "Guardar Semestre", color = MaterialTheme.colorScheme.onSecondary)}
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(48.dp))
         }
     }
 }
@@ -171,11 +185,14 @@ fun NewSemesterContent(
 @Preview(showBackground = true)
 @Composable
 fun NewSemesterScreenPreview() {
-    NewSemesterContent(
-        name = "2024-I",
-        isCurrent = true,
-        onNameChange = {},
-        onIsCurrentChange = {},
-        onSaveClick = {}
-    )
+    UNSAGradesTheme(dynamicColor = false) {
+        NewSemesterContent(
+            name = "2024-I",
+            isCurrent = true,
+            onNameChange = {},
+            onIsCurrentChange = {},
+            onSaveClick = {},
+            innerPadding = PaddingValues(0.dp)
+        )
+    }
 }

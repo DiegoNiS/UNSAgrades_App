@@ -20,6 +20,10 @@ sealed class Routes(val route: String) {
         }
     }
 
+    object Welcome : Routes("welcome")
+
+    object Profile : Routes("profile_screen")
+
     // Historial de semestres anteriores
     object SemesterHistory : Routes("semester_history")
 

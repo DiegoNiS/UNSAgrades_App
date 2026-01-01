@@ -40,6 +40,10 @@ class AddCourseViewModel @Inject constructor(
     )
     val partialConfigs = _partialConfigs.asStateFlow()
 
+    // 1. New State for Total Weight
+    private val _totalWeight = MutableStateFlow(0f)
+    val totalWeight = _totalWeight.asStateFlow()
+
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage = _errorMessage.asStateFlow()
 
@@ -78,7 +82,20 @@ class AddCourseViewModel @Inject constructor(
         }
         _partialConfigs.value = currentList
 
+        // 2. Recalculate total immediately after update
+        recalculateTotalWeight(currentList)
+
         if (_errorMessage.value != null) _errorMessage.value = null
+    }
+
+    // 3. Private helper function to sum values
+    private fun recalculateTotalWeight(configs: List<PartialConfigUiModel>) {
+        val sum = configs.sumOf { item ->
+            val exam = item.examWeightStr.toDoubleOrNull() ?: 0.0
+            val continuous = item.continuousWeightStr.toDoubleOrNull() ?: 0.0
+            exam + continuous
+        }
+        _totalWeight.value = sum.toFloat()
     }
 
     fun saveCourse(goToDetail: Boolean) {

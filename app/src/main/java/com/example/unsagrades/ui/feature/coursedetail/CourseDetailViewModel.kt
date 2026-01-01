@@ -10,6 +10,8 @@ import com.example.unsagrades.data.local.entity.GradeType
 import com.example.unsagrades.data.local.relation.CourseWithConfigAndGrades
 import com.example.unsagrades.domain.repository.GradeRepository
 import com.example.unsagrades.domain.usecase.CalculateWeightedAverageUseCase
+import com.example.unsagrades.domain.usecase.ValidateCourseConfigUseCase
+import com.example.unsagrades.ui.common.CourseStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,9 +26,11 @@ import javax.inject.Inject
 data class CourseDetailUiState(
     val courseName: String = "",
     val average: Double = 0.0,
-    val status: String = "Cargando...",
+    val status: CourseStatus = CourseStatus.UNKNOWN,
+    val totalWeight: Int = 0,
     val partials: List<PartialUiModel> = emptyList(),
-    val sustitutorio: GradeEntity? = null // Nota del susti si existe
+    val sustitutorio: GradeEntity? = null, // Nota del susti si existe
+    val progress : Float = 0f
 )
 
 data class PartialUiModel(
@@ -39,16 +43,17 @@ data class PartialUiModel(
 class CourseDetailViewModel @Inject constructor(
     private val repository: GradeRepository,
     private val calculateAverageUseCase: CalculateWeightedAverageUseCase,
+    private val validateCourseConfigUseCase: ValidateCourseConfigUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val courseId: String = checkNotNull(savedStateHandle["courseId"])
 
     // Estado principal
-    val uiState: StateFlow<CourseDetailUiState> = repository.getCourseDetail(courseId)
+            val uiState: StateFlow<CourseDetailUiState> = repository.getCourseDetail(courseId)
         .combine(MutableStateFlow(0)) { courseData, _ ->
             if (courseData == null) {
-                CourseDetailUiState(status = "Curso no encontrado")
+                CourseDetailUiState(status = CourseStatus.UNKNOWN)
             } else {
                 mapToUiState(courseData)
             }
@@ -63,14 +68,21 @@ class CourseDetailViewModel @Inject constructor(
         val allGrades = data.evaluations.flatMap { it.grades }
         val allConfigs = data.evaluations.map { it.config }
 
+
+
         // 2. Calcular promedio
         val avg = calculateAverageUseCase(allConfigs, allGrades)
+        val totalWeight = validateCourseConfigUseCase(allConfigs).let {
+            if (it is ValidateCourseConfigUseCase.Result.Invalid) {
+                it.value ?: 0
+            } else {100}
+        }
 
         // 3. Determinar Estado
         val statusText = when {
-            avg >= 10.5 -> "Aprobado"
-            avg >= 10.0 -> "En Riesgo / Proyectado"
-            else -> "Desaprobado"
+            avg >= 10.5 -> CourseStatus.PASSING
+            avg >= 10.0 -> CourseStatus.PROJECTED
+            else -> CourseStatus.FAILING
         }
 
         // 4. Mapear Parciales (Asegurando que siempre haya Exam y Cont)
@@ -103,13 +115,19 @@ class CourseDetailViewModel @Inject constructor(
         // Para simplificar, asumiremos que el susti se guarda asociado a la config del Parcial 1 (o cualquiera) 
         // pero con tipo SUSTI, o mejor, lo buscamos en la lista plana.
         val susti = allGrades.find { it.type == GradeType.SUSTI }
+        val denominador = if (susti != null) 7.0 else 6.0
+
+        val confirmedEvaluations = allGrades.count { it.isConfirmed }
+        val progress = (confirmedEvaluations / denominador).toFloat() // Placeholder: Aquí iría lógica matemática de pesos procesados
 
         return CourseDetailUiState(
             courseName = data.course.name,
             average = avg,
             status = statusText,
+            totalWeight = totalWeight,
             partials = partialsList,
-            sustitutorio = susti
+            sustitutorio = susti,
+            progress = progress
         )
     }
 

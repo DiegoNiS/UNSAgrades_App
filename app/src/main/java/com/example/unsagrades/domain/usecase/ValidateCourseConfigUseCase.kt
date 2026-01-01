@@ -12,7 +12,7 @@ class ValidateCourseConfigUseCase @Inject constructor() {
 
     sealed class Result {
         object Valid : Result()
-        data class Invalid(val reason: String) : Result()
+        data class Invalid(val reason: String, val value: Int? = null) : Result()
     }
 
     /**
@@ -29,14 +29,14 @@ class ValidateCourseConfigUseCase @Inject constructor() {
 
         // Validación: Aceptamos 100% (+-0.1) o 1.0 (+-0.01) para decimales
         val isPercentage = abs(totalSum - 100f) < 0.1f
-        val isDecimal = abs(totalSum - 1.0f) < 0.01f
+        //val isDecimal = abs(totalSum - 1.0f) < 0.01f
 
-        return if (isPercentage || isDecimal) {
+        return if (isPercentage) {
             Result.Valid
         } else {
             // Formateamos el mensaje para que sea claro si se pasó o le falta
-            val formattedSum = if (totalSum > 2.0f) "$totalSum%" else "${totalSum * 100}%"
-            Result.Invalid("La suma total de pesos es $formattedSum. Debe ser exactamente 100%.")
+            val formattedSum = "$totalSum%"
+            Result.Invalid("La suma total de pesos es $formattedSum. Debe ser exactamente 100%.", totalSum.toInt())
         }
     }
 }

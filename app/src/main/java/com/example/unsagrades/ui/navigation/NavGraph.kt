@@ -1,6 +1,7 @@
 package com.example.unsagrades.ui.navigation
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -16,17 +17,21 @@ import com.example.unsagrades.ui.feature.semester.NewSemesterScreen
 import com.example.unsagrades.ui.feature.dashboard.DashboardScreen
 import com.example.unsagrades.ui.feature.createcourse.AddCourseScreen
 import com.example.unsagrades.ui.feature.coursedetail.CourseDetailScreen
+import com.example.unsagrades.ui.feature.onboarding.WelcomeScreen
+import com.example.unsagrades.ui.feature.profile.ProfileScreen
 import com.example.unsagrades.ui.feature.semester.SemesterHistoryScreen
 
 
 @Composable
 fun UnsaNavGraph(
     navController: NavHostController,
-    startDestination: String = Routes.NewSemester.route
+    startDestination: String = Routes.NewSemester.route,
+    innerPadding : PaddingValues,
 ) {
     NavHost(
         navController = navController,
-        startDestination = startDestination
+        startDestination = startDestination,
+        //innerPadding = innerPadding
     ) {
         // 1. NUEVO SEMESTRE
         composable(Routes.NewSemester.route) {
@@ -35,7 +40,8 @@ fun UnsaNavGraph(
                     navController.navigate(Routes.Dashboard.createRoute()) {
                         popUpTo(Routes.NewSemester.route) { inclusive = true }
                     }
-                }
+                },
+                innerPadding = innerPadding
             )
         }
 
@@ -53,7 +59,8 @@ fun UnsaNavGraph(
             DashboardScreen(
                 onNavigateToCreateCourse = { navController.navigate(Routes.CreateCourse.route) },
                 onNavigateToCourseDetail = { id -> navController.navigate(Routes.CourseDetail.createRoute(id)) },
-                onNavigateToHistory = { navController.navigate(Routes.SemesterHistory.route) }
+                onNavigateToHistory = { navController.navigate(Routes.SemesterHistory.route) },
+                innerPadding = innerPadding
             )
         }
 
@@ -65,7 +72,8 @@ fun UnsaNavGraph(
                     navController.navigate(Routes.CourseDetail.createRoute(id)) {
                         popUpTo(Routes.CreateCourse.route) { inclusive = true }
                     }
-                }
+                },
+                innerPadding = innerPadding
             )
         }
 
@@ -74,7 +82,10 @@ fun UnsaNavGraph(
             route = Routes.CourseDetail.route,
             arguments = listOf(navArgument("courseId") { type = NavType.StringType })
         ) {
-            CourseDetailScreen(onNavigateBack = { navController.popBackStack() })
+            CourseDetailScreen(
+                onNavigateBack = { navController.popBackStack() },
+                innerPadding = innerPadding
+            )
         }
 
         // 5. HISTORIAL (Con navegación al Dashboard específico)
@@ -84,7 +95,32 @@ fun UnsaNavGraph(
                 onSemesterClick = { semesterId ->
                     // AL CLICKAR, VAMOS AL DASHBOARD DE ESE SEMESTRE
                     navController.navigate(Routes.Dashboard.createRoute(semesterId))
-                }
+                },
+                innerPadding = innerPadding
+            )
+        }
+
+        composable(Routes.Profile.route) {
+            ProfileScreen(
+                onNavigateToDashboard = { navController.navigate(Routes.Dashboard.createRoute()) },
+                innerPadding = innerPadding
+            )
+        }
+
+        // 0. PANTALLA DE BIENVENIDA
+        composable(Routes.Welcome.route) {
+            WelcomeScreen(
+                onNavigateToNewSemester = {
+                    navController.navigate(Routes.NewSemester.route) {
+                        popUpTo(Routes.Welcome.route) { inclusive = true }
+                    }
+                },
+                onNavigateToDashboard = {
+                    navController.navigate(Routes.Dashboard.createRoute()) {
+                        popUpTo(Routes.Welcome.route) { inclusive = true }
+                    }
+                },
+                innerPadding = innerPadding
             )
         }
     }
@@ -93,7 +129,7 @@ fun UnsaNavGraph(
 //// Composable temporal para lo que falta
 //@Composable
 //fun PlaceholderScreen(title: String) {
-//    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+//    Box(innerPadding = innerPadding.fillMaxSize(), contentAlignment = Alignment.Center) {
 //        Text(text = title)
 //    }
 //}
